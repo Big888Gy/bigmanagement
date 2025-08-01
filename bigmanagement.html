@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BigManagement - ระบบบริหารจัดการงาน</title>
+    <meta name="description" content="ระบบบริหารจัดการงานและบันทึกการปฏิบัติงานโดยครูบิ๊กกี้">
+    <meta name="author" content="นายสุวิศิษฐ์ ก้านจักร">
+    <meta name="theme-color" content="#4f46e5">
+    <link rel="icon" type="image/svg+xml" href="https://www.gstatic.com/images/branding/product/1x/apps_script_64dp.png">
+    
+    <!-- Libs -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.7/dayjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.7/locale/th.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.7/plugin/relativeTime.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Prompt:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --color-primary: #4f46e5; /* Indigo 600 */
+            --color-secondary: #10b981; /* Emerald 500 */
+            --color-danger: #ef4444; /* Red 500 */
+            --color-warning: #f59e0b; /* Amber 500 */
+            --color-info: #3b82f6; /* Blue 500 */
+            --font-main: 'Prompt', 'Kanit', sans-serif;
+        }
+        body {
+            font-family: var(--font-main);
+            background-color: #f3f4f6; /* Gray 100 */
+        }
+        .text-gradient {
+            background: linear-gradient(45deg, var(--color-primary), var(--color-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-fill-color: transparent;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.07), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            border: 1px solid #e5e7eb; /* Gray 200 */
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            font-size: 1rem;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.1);
+        }
+        .btn-primary {
+            background: linear-gradient(45deg, var(--color-primary), #6366f1);
+            color: white;
+        }
+        .btn-secondary {
+            background: linear-gradient(45deg, var(--color-secondary), #34d399);
+            color: white;
+        }
+        .btn-info {
+            background: linear-gradient(45deg, var(--color-info), #60a5fa);
+            color: white;
+        }
+        .btn:active {
+            transform: translateY(0);
+            filter: brightness(0.95);
+        }
+        input, textarea, select {
+            border-radius: 12px !important;
+            border: 1px solid #d1d5db !important; /* Gray 300 */
+            padding: 0.75rem 1rem !important;
+            width: 100%;
+            transition: all 0.2s;
+            font-family: var(--font-main);
+            font-size: 1rem;
+            background-color: #f9fafb; /* Gray 50 */
+        }
+        input:focus, textarea:focus, select:focus {
+            border-color: var(--color-primary) !important;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2) !important;
+            outline: none;
+            background-color: #fff;
+        }
+        .task-item {
+            border-left-width: 5px;
+            transition: all 0.3s ease;
+            background-color: #f9fafb;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .task-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+        }
+        .priority-ปกติ { border-color: var(--color-info); }
+        .priority-ด่วน { border-color: var(--color-warning); }
+        .priority-ด่วนที่สุด { border-color: var(--color-danger); }
+        .completed { opacity: 0.6; background-color: #f3f4f6; }
+        .completed .task-name { text-decoration: line-through; }
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 5px solid var(--color-primary);
+            width: 60px;
+            height: 60px;
+            animation: spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #message-box {
+            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+            padding: 1rem 1.5rem; border-radius: 12px; color: white; z-index: 1000;
+            opacity: 0; visibility: hidden; transition: all 0.5s ease;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.1);
+            font-size: 1.1rem; font-family: var(--font-main);
+            max-width: 90%; text-align: center;
+        }
+        #message-box.show { opacity: 1; visibility: visible; transform: translate(-50%, -10px); }
+        .tab {
+            padding: 0.75rem 1.5rem; cursor: pointer;
+            border-bottom: 4px solid transparent;
+            transition: all 0.3s; font-weight: 600; font-size: 1.1rem;
+            color: #4b5563; /* Gray 600 */
+        }
+        .tab.active {
+            color: var(--color-primary);
+            border-bottom-color: var(--color-primary);
+        }
+        .tab:not(.active):hover { color: var(--color-primary); }
+        .tab-content { animation: contentFadeIn 0.5s ease; }
+        @keyframes contentFadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        .chartjs-render-monitor { animation: fadeIn 1s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .log-img {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            border: 1px solid #e5e7eb;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .log-img:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="container mx-auto p-4 md:p-6 max-w-7xl">
+        <header class="text-center my-8 md:my-12">
+            <div class="inline-block p-4 bg-white rounded-2xl shadow-md mb-4 animate__animated animate__fadeInDown">
+                <img src="https://www.gstatic.com/images/branding/product/1x/apps_script_64dp.png" alt="Apps Script Logo" class="h-16 w-16">
+            </div>
+            <h1 class="text-4xl md:text-5xl font-bold text-gradient animate__animated animate__fadeInUp">BigManagement</h1>
+            <p class="text-lg md:text-xl text-slate-600 mt-2 font-medium animate__animated animate__fadeInUp animate__delay-1s">ระบบบริหารจัดการงาน โดย <span class="font-semibold">ครูบิ๊กกี้ (นายสุวิศิษฐ์ ก้านจักร)</span></p>
+        </header>
+
+        <div class="flex flex-wrap justify-center border-b border-slate-200 mb-8">
+            <div id="tab-tasks" class="tab active" data-tab="tasks">📝 จัดการงาน</div>
+            <div id="tab-logs" class="tab" data-tab="logs">📒 บันทึกปฏิบัติงาน</div>
+            <div id="tab-links" class="tab" data-tab="links">📊 ข้อมูล & รายงาน</div>
+        </div>
+
+        <main>
+            <!-- Tasks Content -->
+            <div id="content-tasks" class="tab-content">
+                <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                    <div class="lg:col-span-3 space-y-6">
+                        <div class="card">
+                            <h2 class="text-2xl font-bold mb-5 text-slate-800">เพิ่มงานใหม่</h2>
+                            <form id="task-form" class="space-y-4">
+                                <div>
+                                    <label for="task_name" class="block text-slate-700 font-semibold mb-2">ชื่องาน:</label>
+                                    <input type="text" id="task_name" name="task_name" required placeholder="เช่น ตรวจการบ้านนักเรียน">
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="due_date" class="block text-slate-700 font-semibold mb-2">กำหนดส่ง:</label>
+                                        <input type="date" id="due_date" name="due_date" required>
+                                    </div>
+                                    <div>
+                                        <label for="priority" class="block text-slate-700 font-semibold mb-2">ความสำคัญ:</label>
+                                        <select id="priority" name="priority">
+                                            <option value="ปกติ">ปกติ</option>
+                                            <option value="ด่วน">ด่วน</option>
+                                            <option value="ด่วนที่สุด">ด่วนที่สุด</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <button type="submit" id="task-submit-btn" class="btn btn-primary w-full !mt-6">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                                    เพิ่มงาน
+                                </button>
+                            </form>
+                        </div>
+                        <div class="card">
+                            <h2 class="text-2xl font-bold mb-4 text-slate-800">ภาพรวมสถานะงาน</h2>
+                            <div class="max-w-sm mx-auto"><canvas id="taskChart"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-2 card">
+                        <h2 class="text-2xl font-bold mb-5 text-slate-800">รายการงานทั้งหมด</h2>
+                        <div id="task-list" class="space-y-3 max-h-[500px] overflow-y-auto pr-2"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logs Content -->
+            <div id="content-logs" class="hidden tab-content">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="card">
+                        <h2 class="text-2xl font-bold mb-5 text-slate-800">บันทึกการปฏิบัติงาน</h2>
+                        <form id="log-form" class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="log_date" class="block text-slate-700 font-semibold mb-2">วันที่:</label>
+                                    <input type="date" id="log_date" name="log_date" required>
+                                </div>
+                                <div>
+                                    <label for="location" class="block text-slate-700 font-semibold mb-2">สถานที่:</label>
+                                    <input type="text" id="location" name="location" required placeholder="เช่น โรงเรียน A">
+                                </div>
+                            </div>
+                            <div>
+                                <label for="description" class="block text-slate-700 font-semibold mb-2">รายละเอียดงาน:</label>
+                                <textarea id="description" name="description" rows="4" required placeholder="อธิบายกิจกรรมที่ทำ..."></textarea>
+                            </div>
+                            <div>
+                                <label for="image" class="block text-slate-700 font-semibold mb-2">รูปภาพประกอบ (ถ้ามี):</label>
+                                <input type="file" id="image" name="image" accept="image/*" class="!p-2 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                            </div>
+                            <button type="submit" id="log-submit-btn" class="btn btn-primary w-full !mt-6">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M5.5 13a3.5 3.5 0 01-.369-6.98a4.5 4.5 0 118.738 0A3.5 3.5 0 0114.5 13H5.5z" /><path d="M9 13.5a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" /></svg>
+                                บันทึกข้อมูล
+                            </button>
+                        </form>
+                    </div>
+                    <div class="card">
+                        <h2 class="text-2xl font-bold mb-5 text-slate-800">ประวัติการปฏิบัติงาน</h2>
+                        <div id="log-list" class="space-y-4 max-h-[600px] overflow-y-auto pr-2"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Links & Reports Content -->
+            <div id="content-links" class="hidden tab-content">
+                 <div class="card text-center max-w-3xl mx-auto">
+                    <h2 class="text-2xl font-bold mb-4 text-slate-800">ฐานข้อมูลและรายงาน</h2>
+                    <p class="text-slate-500 mb-8 max-w-2xl mx-auto">เข้าถึงฐานข้อมูลบน Google Sheet, โฟลเดอร์รูปภาพบน Google Drive และส่งรายงานสรุปงานเข้า Telegram ได้จากที่นี่</p>
+                    <div class="flex flex-col md:flex-row justify-center items-center gap-4">
+                        <a href="https://docs.google.com/spreadsheets/d/1WIugQxJBATRWyG6XHgewA783hmtHQE8EjHIMYaPfAXY/edit" target="_blank" rel="noopener" class="btn btn-info w-full md:w-auto">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M2 6a2 2 0 012-2h12a2 2 0 012 2v1H2V6zM2 9a2 2 0 00-2 2v2a2 2 0 002 2h16a2 2 0 002-2v-2a2 2 0 00-2-2H2z" /></svg>
+                            เปิด Google Sheet
+                        </a>
+                        <a href="https://drive.google.com/drive/folders/1PD0v2UjgtfpdSwgwXaJeMAxQm894sKHf" target="_blank" rel="noopener" class="btn btn-info w-full md:w-auto">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" /></svg>
+                            เปิด Google Drive
+                        </a>
+                        <button id="report-btn" class="btn btn-secondary w-full md:w-auto">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M11 3a1 1 0 10-2 0v1.086A7.002 7.002 0 004.086 11H3a1 1 0 100 2h1.086A7.002 7.002 0 0011 18.914V20a1 1 0 102 0v-1.086A7.002 7.002 0 0018.914 11H20a1 1 0 100-2h-1.086A7.002 7.002 0 0013 4.086V3zM10 16a6 6 0 100-12 6 6 0 000 12z" /></svg>
+                            ส่งรายงานสรุป
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="text-center mt-12 py-6 text-slate-500 border-t">
+            <p>Copyright © 2025 by <a href="#" class="text-gradient font-bold">BigGy Teacher</a>. All Rights Reserved.</p>
+        </footer>
+    </div>
+
+    <div id="loading-overlay" class="fixed inset-0 bg-white bg-opacity-75 backdrop-blur-sm z-50 flex items-center justify-center hidden"><div class="loader"></div></div>
+    <div id="message-box"></div>
+
+    <script type="module">
+        // --- Libs Setup ---
+        dayjs.locale('th');
+        dayjs.extend(window.dayjs_plugin_relativeTime);
+
+        // --- Configuration ---
+        // ‼️ สำคัญ: หากต้องการใช้งานเต็มรูปแบบ ให้ Deploy ไฟล์ Code.gs
+        // และนำ URL ที่ได้มาใส่แทนที่ "YOUR_GOOGLE_APPS_SCRIPT_URL"
+        // หากปล่อยไว้ ระบบจะทำงานใน "โหมดสาธิต" (Demo Mode) โดยใช้ข้อมูลจำลอง
+                const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby77Xs75cx5GD8YR2t7ZaRbQeOOVQrM6GESFIptOqdbAxbA6yk7dV22g-KypDF0jQB4/exec";
+
+        // --- Global State & Elements ---
+        let taskChart = null;
+        const ui = {
+            loadingOverlay: document.getElementById('loading-overlay'),
+            messageBox: document.getElementById('message-box'),
+            tabs: document.querySelectorAll('.tab'),
+            tabContents: {
+                tasks: document.getElementById('content-tasks'),
+                logs: document.getElementById('content-logs'),
+                links: document.getElementById('content-links'),
+            },
+            taskForm: document.getElementById('task-form'),
+            taskList: document.getElementById('task-list'),
+            logForm: document.getElementById('log-form'),
+            logList: document.getElementById('log-list'),
+            reportBtn: document.getElementById('report-btn'),
+        };
+
+        // --- Helper Functions ---
+        const showLoading = (show) => ui.loadingOverlay.classList.toggle('hidden', !show);
+        
+        function showMessage(message, type = 'success') {
+            const successClasses = ['bg-gradient-to-r', 'from-green-500', 'to-teal-500'];
+            const errorClasses = ['bg-gradient-to-r', 'from-red-500', 'to-pink-500'];
+            ui.messageBox.textContent = message;
+            ui.messageBox.className = 'message-box'; // Reset classes
+            ui.messageBox.classList.add('show', ...(type === 'success' ? successClasses : errorClasses));
+            setTimeout(() => ui.messageBox.classList.remove('show'), 4000);
+        }
+
+        function isDemoMode() {
+            const isPlaceholder = !SCRIPT_URL || SCRIPT_URL.includes("YOUR_GOOGLE_APPS_SCRIPT_URL");
+            if (isPlaceholder) {
+                console.warn("Running in DEMO MODE. Data will not be saved.");
+            }
+            return isPlaceholder;
+        }
+
+        // --- API Service ---
+        const apiService = {
+            async post(action, data) {
+                if (isDemoMode()) {
+                    showMessage("โหมดสาธิต: ไม่สามารถบันทึกข้อมูลได้", "error");
+                    return { status: 'demo', message: 'Demo mode' };
+                }
+                showLoading(true);
+                try {
+                    const response = await fetch(SCRIPT_URL, {
+                        method: 'POST',
+                        mode: 'cors',
+                        cache: 'no-cache',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({ action, data }),
+                        redirect: 'follow'
+                    });
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    return await response.json();
+                } catch (error) {
+                    console.error("API POST Error:", error);
+                    showMessage(`การเชื่อมต่อล้มเหลว: ${error.message}`, "error");
+                    return null;
+                } finally {
+                    showLoading(false);
+                }
+            },
+            async get(action) {
+                if (isDemoMode()) {
+                    return this.getMockData(action);
+                }
+                showLoading(true);
+                try {
+                    const response = await fetch(`${SCRIPT_URL}?action=${action}`);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    return await response.json();
+                } catch (error) {
+                    console.error("API GET Error:", error);
+                    showMessage(`ไม่สามารถโหลดข้อมูลได้: ${error.message}`, "error");
+                    return [];
+                } finally {
+                    showLoading(false);
+                }
+            },
+            getMockData(action) {
+                console.log(`DEMO: Getting mock data for ${action}`);
+                const today = dayjs();
+                if (action === 'getTasks') {
+                    return [
+                        { id: '1', name: 'เตรียมแผนการสอนวิทยาศาสตร์ ป.4', dueDate: today.add(2, 'day').format('YYYY-MM-DD'), priority: 'ด่วน', isCompleted: false, createdAt: today.subtract(1, 'day').toISOString() },
+                        { id: '2', name: 'ตรวจการบ้านคณิตศาสตร์', dueDate: today.subtract(1, 'day').format('YYYY-MM-DD'), priority: 'ด่วนที่สุด', isCompleted: false, createdAt: today.subtract(2, 'day').toISOString() },
+                        { id: '3', name: 'ประชุมผู้ปกครอง', dueDate: today.add(5, 'day').format('YYYY-MM-DD'), priority: 'ปกติ', isCompleted: false, createdAt: today.subtract(3, 'day').toISOString() },
+                        { id: '4', name: 'ส่งรายงานผลการเรียน', dueDate: today.subtract(3, 'day').format('YYYY-MM-DD'), priority: 'ด่วน', isCompleted: true, createdAt: today.subtract(5, 'day').toISOString() }
+                    ];
+                }
+                if (action === 'getLogs') {
+                    return [
+                        { id: 'l1', logDate: today.format('YYYY-MM-DD'), location: 'ห้องสมุด', description: 'ควบคุมนักเรียนอ่านหนังสือ', imageUrl: 'https://placehold.co/400x300/a7c5fd/333?text=ภาพประกอบ', createdAt: today.toISOString() },
+                        { id: 'l2', logDate: today.subtract(1, 'day').format('YYYY-MM-DD'), location: 'ห้องประชุม', description: 'ประชุมครูประจำเดือน สรุปผลการทำงาน', imageUrl: '', createdAt: today.subtract(1, 'day').toISOString() }
+                    ];
+                }
+                return [];
+            }
+        };
+
+        // --- UI Rendering ---
+        function renderTasks(tasks) {
+            if (!tasks || tasks.length === 0) {
+                ui.taskList.innerHTML = '<p class="text-slate-500 text-center py-4">เยี่ยมเลย! ไม่มีงานค้างอยู่ตอนนี้ 🎉</p>';
+                updateTaskChart(0, 0, 0);
+                return;
+            }
+            
+            tasks.sort((a, b) => (a.isCompleted - b.isCompleted) || (new Date(a.dueDate) - new Date(b.dueDate)));
+            
+            ui.taskList.innerHTML = '';
+            let stats = { pending: 0, completed: 0, overdue: 0 };
+            const today = dayjs().startOf('day');
+
+            tasks.forEach(task => {
+                const dueDate = dayjs(task.dueDate);
+                const isOverdue = !task.isCompleted && dueDate.isBefore(today);
+                if (task.isCompleted) stats.completed++;
+                else if (isOverdue) stats.overdue++;
+                else stats.pending++;
+
+                const taskEl = document.createElement('div');
+                taskEl.className = `task-item p-3 flex items-center justify-between priority-${task.priority} ${task.isCompleted ? 'completed' : ''} ${isOverdue ? 'border-danger' : ''}`;
+                taskEl.innerHTML = `
+                    <div class="flex-grow mr-3">
+                        <p class="font-semibold text-slate-800 task-name">${task.name}</p>
+                        <p class="text-sm text-slate-500">
+                            <span class="font-medium ${isOverdue ? 'text-red-600' : ''}">
+                                กำหนดส่ง: ${dueDate.format('D MMM YY')} (${dayjs(task.dueDate).fromNow()})
+                            </span>
+                        </p>
+                    </div>
+                    <div class="flex items-center space-x-2 flex-shrink-0" role="group">
+                        <button data-id="${task.id}" data-completed="${task.isCompleted}" class="toggle-complete-btn btn !p-2 text-white ${task.isCompleted ? 'bg-amber-500 hover:bg-amber-600' : 'bg-green-500 hover:bg-green-600'}" title="${task.isCompleted ? 'ตั้งเป็นยังไม่เสร็จ' : 'ตั้งเป็นเสร็จสิ้น'}">
+                            ${task.isCompleted ? '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>' : '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>'}
+                        </button>
+                        <button data-id="${task.id}" class="delete-task-btn btn !p-2 bg-red-500 hover:bg-red-600 text-white" title="ลบงาน">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
+                        </button>
+                    </div>`;
+                ui.taskList.appendChild(taskEl);
+            });
+            updateTaskChart(stats.pending, stats.completed, stats.overdue);
+        }
+
+        function renderLogs(logs) {
+            if (!logs || logs.length === 0) {
+                ui.logList.innerHTML = '<p class="text-slate-500 text-center py-4">ยังไม่มีการบันทึกการปฏิบัติงาน</p>';
+                return;
+            }
+            logs.sort((a, b) => new Date(b.logDate) - new Date(a.logDate));
+            ui.logList.innerHTML = '';
+            logs.forEach(log => {
+                const logEl = document.createElement('div');
+                logEl.className = 'p-4 rounded-lg bg-slate-50 border border-slate-200';
+                logEl.innerHTML = `
+                    <p class="font-bold text-slate-800 text-lg">${dayjs(log.logDate).format('dddd, D MMMM YYYY')}</p>
+                    <p class="text-slate-600 mb-2"><strong>สถานที่:</strong> ${log.location}</p>
+                    <p class="text-slate-700 mb-3 whitespace-pre-wrap">${log.description}</p>
+                    ${log.imageUrl ? `<a href="${log.imageUrl}" target="_blank" rel="noopener noreferrer"><img src="${log.imageUrl}" alt="ภาพประกอบ" class="mt-2 log-img max-h-48 w-auto hover:opacity-80 transition-opacity"></a>` : ''}
+                `;
+                ui.logList.appendChild(logEl);
+            });
+        }
+
+        function updateTaskChart(pending, completed, overdue) {
+            const ctx = document.getElementById('taskChart').getContext('2d');
+            const data = {
+                labels: ['ยังไม่เสร็จ', 'เสร็จสิ้นแล้ว', 'เกินกำหนด'],
+                datasets: [{
+                    data: [pending, completed, overdue],
+                    backgroundColor: ['#3b82f6', '#10b981', '#ef4444'],
+                    borderColor: '#ffffff',
+                    borderWidth: 4,
+                    hoverOffset: 8
+                }]
+            };
+            if (taskChart) {
+                taskChart.data = data;
+                taskChart.update();
+            } else {
+                taskChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data,
+                    options: {
+                        responsive: true,
+                        cutout: '70%',
+                        plugins: {
+                            legend: { position: 'bottom', labels: { font: { family: "'Prompt', sans-serif", size: 14 }, color: '#475569' } },
+                            tooltip: { callbacks: { label: (c) => `${c.label}: ${c.raw} งาน` } }
+                        }
+                    }
+                });
+            }
+        }
+
+        // --- Event Handlers ---
+        async function handleLoadData() {
+            const tasks = await apiService.get('getTasks');
+            renderTasks(tasks);
+            const logs = await apiService.get('getLogs');
+            renderLogs(logs);
+        }
+
+        function handleTabSwitch(e) {
+            const clickedTab = e.target.closest('.tab');
+            if (!clickedTab) return;
+            
+            const tabName = clickedTab.dataset.tab;
+            ui.tabs.forEach(tab => tab.classList.toggle('active', tab === clickedTab));
+            Object.values(ui.tabContents).forEach(content => content.classList.add('hidden'));
+            ui.tabContents[tabName].classList.remove('hidden');
+        }
+
+        async function handleTaskSubmit(e) {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            const taskData = {
+                name: ui.taskForm.task_name.value,
+                dueDate: ui.taskForm.due_date.value,
+                priority: ui.taskForm.priority.value,
+            };
+            const result = await apiService.post('addTask', taskData);
+            if (result && (result.status === 'success' || result.status === 'demo')) {
+                showMessage("เพิ่มงานใหม่เรียบร้อยแล้ว", "success");
+                ui.taskForm.reset();
+                const tasks = await apiService.get('getTasks');
+                renderTasks(tasks);
+            }
+            btn.disabled = false;
+        }
+
+        async function handleTaskListClick(e) {
+            const button = e.target.closest('button');
+            if (!button) return;
+            
+            const taskId = button.dataset.id;
+            let result;
+            if (button.classList.contains('toggle-complete-btn')) {
+                const isCompleted = button.dataset.completed === 'true';
+                result = await apiService.post('updateTask', { id: taskId, isCompleted: !isCompleted });
+            } else if (button.classList.contains('delete-task-btn')) {
+                if (confirm('คุณแน่ใจหรือไม่ว่าต้องการลบงานนี้?')) {
+                    result = await apiService.post('deleteTask', { id: taskId });
+                }
+            }
+
+            if (result) {
+                const tasks = await apiService.get('getTasks');
+                renderTasks(tasks);
+            }
+        }
+
+        async function handleLogSubmit(e) {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            
+            const imageFile = ui.logForm.image.files[0];
+            const logData = {
+                logDate: ui.logForm.log_date.value,
+                location: ui.logForm.location.value,
+                description: ui.logForm.description.value,
+            };
+
+            const saveLog = async (imageData = null, imageName = null) => {
+                const result = await apiService.post('addLog', { ...logData, imageData, imageName });
+                if (result && (result.status === 'success' || result.status === 'demo')) {
+                    showMessage("บันทึกการปฏิบัติงานเรียบร้อย", "success");
+                    ui.logForm.reset();
+                    const logs = await apiService.get('getLogs');
+                    renderLogs(logs);
+                }
+                btn.disabled = false;
+            };
+
+            if (imageFile && !isDemoMode()) {
+                const reader = new FileReader();
+                reader.onloadend = () => saveLog(reader.result, imageFile.name);
+                reader.onerror = () => {
+                    showMessage("ไม่สามารถอ่านไฟล์รูปภาพได้", "error");
+                    btn.disabled = false;
+                };
+                reader.readAsDataURL(imageFile);
+            } else {
+                if (imageFile && isDemoMode()) {
+                    showMessage("โหมดสาธิต: ไม่สามารถอัปโหลดรูปภาพได้", "error");
+                }
+                saveLog();
+            }
+        }
+
+        async function handleReportClick() {
+            const result = await apiService.post('sendSummaryReport', {});
+            if (result && (result.status === 'success' || result.status === 'demo')) {
+                showMessage("ส่งรายงานสรุปเข้า Telegram แล้ว!", "success");
+            }
+        }
+
+        // --- Initializer ---
+        function initialize() {
+            document.addEventListener('DOMContentLoaded', handleLoadData);
+            document.querySelector('.flex-wrap.justify-center').addEventListener('click', handleTabSwitch);
+            ui.taskForm.addEventListener('submit', handleTaskSubmit);
+            ui.taskList.addEventListener('click', handleTaskListClick);
+            ui.logForm.addEventListener('submit', handleLogSubmit);
+            ui.reportBtn.addEventListener('click', handleReportClick);
+            
+            // Set default dates
+            ui.taskForm.due_date.value = dayjs().format('YYYY-MM-DD');
+            ui.logForm.log_date.value = dayjs().format('YYYY-MM-DD');
+        }
+
+        initialize();
+    </script>
+</body>
+</html>
